@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="400" height="500">
+  <defs>
+    <radialGradient id="fallbackGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1f1e24" />
+      <stop offset="100%" stop-color="#0e0e11" />
+    </radialGradient>
+    <linearGradient id="fallbackGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f4e4a6" />
+      <stop offset="50%" stop-color="#d4a017" />
+      <stop offset="100%" stop-color="#93620c" />
+    </linearGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#fallbackGlow)"/>
+  <!-- Subtle strap -->
+  <rect x="160" y="24" width="80" height="66" rx="8" fill="#1c1c20" stroke="#333" stroke-width="1"/>
+  <rect x="160" y="410" width="80" height="66" rx="8" fill="#1c1c20" stroke="#333" stroke-width="1"/>
+  <!-- Bezel -->
+  <circle cx="200" cy="250" r="136" fill="#141418" stroke="url(#fallbackGold)" stroke-width="3"/>
+  <circle cx="200" cy="250" r="124" fill="#0d0d10" stroke="#25252b" stroke-width="1.5"/>
+  <!-- Hour markers -->
+  <line x1="200" y1="138" x2="200" y2="152" stroke="url(#fallbackGold)" stroke-width="3" stroke-linecap="round"/>
+  <line x1="200" y1="348" x2="200" y2="362" stroke="url(#fallbackGold)" stroke-width="3" stroke-linecap="round"/>
+  <line x1="94" y1="250" x2="108" y2="250" stroke="url(#fallbackGold)" stroke-width="3" stroke-linecap="round"/>
+  <line x1="292" y1="250" x2="306" y2="250" stroke="url(#fallbackGold)" stroke-width="3" stroke-linecap="round"/>
+  <!-- Dial Hands -->
+  <line x1="200" y1="250" x2="200" y2="175" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <line x1="200" y1="250" x2="242" y2="275" stroke="url(#fallbackGold)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="200" y1="250" x2="185" y2="305" stroke="#d4a017" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="200" cy="250" r="5" fill="#d4a017"/>
+  <!-- Text -->
+  <text x="200" y="296" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#d4a017" letter-spacing="3" opacity="0.85">TITANOVA</text>
+  <text x="200" y="312" text-anchor="middle" font-family="sans-serif" font-size="7.5" fill="#888" letter-spacing="1.5">TIMEPIECE</text>
+</svg>

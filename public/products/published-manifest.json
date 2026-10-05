@@ -1,0 +1,132 @@
+{
+  "p001": {
+    "front": true,
+    "back": true,
+    "side": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p002": {
+    "front": true,
+    "back": true,
+    "side": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p003": {
+    "front": true,
+    "back": true,
+    "side": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p004": {
+    "front": true,
+    "back": true,
+    "side": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p005": {
+    "front": true,
+    "back": true,
+    "side": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p006": {
+    "front": true,
+    "back": true,
+    "side": true,
+    "top": true,
+    "model3d": true
+  },
+  "p007": {
+    "front": true,
+    "back": true,
+    "side": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p008": {
+    "front": true,
+    "back": true,
+    "side": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p009": {
+    "front": true,
+    "back": true,
+    "side": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p010": {
+    "front": true,
+    "back": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p011": {
+    "front": true,
+    "back": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p012": {
+    "front": true,
+    "back": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p013": {
+    "back": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p014": {
+    "back": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p015": {
+    "back": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p016": {
+    "back": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p017": {
+    "back": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p018": {
+    "back": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p019": {
+    "back": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p020": {
+    "back": true,
+    "assemblyVideo": true
+  },
+  "p021": {
+    "back": true,
+    "side": true,
+    "top": true,
+    "assemblyVideo": true
+  },
+  "p022": {
+    "back": true,
+    "assemblyVideo": true
+  }
+}

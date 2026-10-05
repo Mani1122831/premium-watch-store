@@ -1,0 +1,306 @@
+[
+  {
+    "id": "notif_1791172190853",
+    "orderId": "TIT-186637-862",
+    "customerName": "mani",
+    "customerEmail": "kasanimanikanta2005@gmail.com",
+    "phone": "9876543210",
+    "totalAmount": 45999,
+    "items": [
+      {
+        "name": "Titanova Chronograph Black",
+        "qty": 1,
+        "price": 45999
+      }
+    ],
+    "shippingAddress": {
+      "name": "mani",
+      "street": "Penthouse 4B, Emerald Heights, Linking Road",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400050",
+      "phone": "9876543210",
+      "country": "India"
+    },
+    "emailStatus": {
+      "sent": true,
+      "messageId": "<96ef2bbf-2373-d380-06bf-4ff3d79b7027@gmail.com>",
+      "recipient": "kasanimanikanta2005@gmail.com"
+    },
+    "createdAt": "2026-10-05T03:49:50.853Z"
+  },
+  {
+    "id": "notif_1791171848402",
+    "orderId": "TIT-842461-560",
+    "customerName": "mani",
+    "customerEmail": "kasanimanikanta2005@gmail.com",
+    "phone": "9876543210",
+    "totalAmount": 45999,
+    "items": [
+      {
+        "name": "Titanova Chronograph Black",
+        "qty": 1,
+        "price": 45999
+      }
+    ],
+    "shippingAddress": {
+      "name": "mani",
+      "street": "Penthouse 4B, Emerald Heights, Linking Road",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400050",
+      "phone": "9876543210",
+      "country": "India"
+    },
+    "emailStatus": {
+      "sent": true,
+      "messageId": "<0d30749b-3588-693d-dd56-bfdeb8f359f7@gmail.com>",
+      "recipient": "kasanimanikanta2005@gmail.com"
+    },
+    "createdAt": "2026-10-05T03:44:08.402Z"
+  },
+  {
+    "id": "notif_1791118050206",
+    "orderId": "TIT-046620-111",
+    "customerName": "mani",
+    "customerEmail": "kasanimanikanta2005@gmail.com",
+    "phone": "9876543210",
+    "totalAmount": 45999,
+    "items": [
+      {
+        "name": "Titanova Chronograph Black",
+        "qty": 1,
+        "price": 45999
+      }
+    ],
+    "shippingAddress": {
+      "name": "mani",
+      "street": "Penthouse 4B, Emerald Heights, Linking Road",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400050",
+      "phone": "9876543210",
+      "country": "India"
+    },
+    "emailStatus": {
+      "sent": true,
+      "messageId": "<2b23f39f-88f2-90ee-1a83-e0436b54a790@gmail.com>",
+      "recipient": "kasanimanikanta2005@gmail.com"
+    },
+    "createdAt": "2026-10-04T12:47:30.206Z"
+  },
+  {
+    "id": "notif_1790951961319",
+    "orderId": "TIT-954865-073",
+    "customerName": "mani",
+    "customerEmail": "kasanimanikanta2005@gmail.com",
+    "phone": "9876543210",
+    "totalAmount": 42000,
+    "items": [
+      {
+        "name": "Titanova Rose Classic",
+        "qty": 1,
+        "price": 42000
+      }
+    ],
+    "shippingAddress": {
+      "name": "mani",
+      "street": "Penthouse 4B, Emerald Heights, Linking Road",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400050",
+      "phone": "9876543210",
+      "country": "India"
+    },
+    "emailStatus": {
+      "sent": true,
+      "messageId": "<90f16be0-deb5-4088-aa9a-e0c595988325@gmail.com>",
+      "recipient": "kasanimanikanta2005@gmail.com"
+    },
+    "createdAt": "2026-10-02T14:39:21.319Z"
+  },
+  {
+    "id": "notif_1790942605982",
+    "orderId": "TIT-TEST-999",
+    "customerName": "Sir Arthur Wellesley",
+    "customerEmail": "arthur@titanova.com",
+    "phone": "9876543210",
+    "totalAmount": 45999,
+    "items": [
+      {
+        "name": "Titanova Chronograph Black",
+        "qty": 1,
+        "price": 45999
+      }
+    ],
+    "shippingAddress": {
+      "street": "42 Royal Crescent",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400001",
+      "phone": "9876543210"
+    },
+    "emailStatus": {
+      "sent": false,
+      "reason": "credentials_not_configured",
+      "recipient": null
+    },
+    "createdAt": "2026-10-02T12:03:25.982Z"
+  },
+  {
+    "id": "notif_1790942546114",
+    "orderId": "TIT-TEST-999",
+    "customerName": "Sir Arthur Wellesley",
+    "customerEmail": "arthur@titanova.com",
+    "phone": "9876543210",
+    "totalAmount": 45999,
+    "items": [
+      {
+        "name": "Titanova Chronograph Black",
+        "qty": 1,
+        "price": 45999
+      }
+    ],
+    "shippingAddress": {
+      "street": "42 Royal Crescent",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400001",
+      "phone": "9876543210"
+    },
+    "emailStatus": {
+      "sent": false,
+      "reason": "credentials_not_configured",
+      "recipient": null
+    },
+    "createdAt": "2026-10-02T12:02:26.114Z"
+  },
+  {
+    "id": "notif_1790942495576",
+    "orderId": "TIT-TEST-999",
+    "customerName": "Sir Arthur Wellesley",
+    "customerEmail": "arthur@titanova.com",
+    "phone": "9876543210",
+    "totalAmount": 45999,
+    "items": [
+      {
+        "name": "Titanova Chronograph Black",
+        "qty": 1,
+        "price": 45999
+      }
+    ],
+    "shippingAddress": {
+      "street": "42 Royal Crescent",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400001",
+      "phone": "9876543210"
+    },
+    "emailStatus": {
+      "sent": false,
+      "reason": "credentials_not_configured",
+      "recipient": null
+    },
+    "createdAt": "2026-10-02T12:01:35.576Z"
+  },
+  {
+    "id": "notif_1790938946357",
+    "orderId": "TIT-942680-907",
+    "customerName": "mani",
+    "customerEmail": "kasanimanikanta2005@gmail.com",
+    "phone": "9876543210",
+    "totalAmount": 24999,
+    "items": [
+      {
+        "name": "Meridian Classic Gold",
+        "qty": 1,
+        "price": 24999
+      }
+    ],
+    "shippingAddress": {
+      "name": "mani",
+      "street": "Penthouse 4B, Emerald Heights, Linking Road",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400050",
+      "phone": "9876543210",
+      "country": "India"
+    },
+    "emailStatus": {
+      "sent": true,
+      "messageId": "<a10d00d5-dfb6-7af6-1574-a3be76066009@gmail.com>",
+      "recipient": "kasanimanikanta2005@gmail.com"
+    },
+    "createdAt": "2026-10-02T11:02:26.357Z"
+  },
+  {
+    "id": "notif_1790938680788",
+    "orderId": "TIT-676817-924",
+    "customerName": "Siddharth Roy",
+    "customerEmail": "patron_1790938670516@titanova-test.com",
+    "phone": "9876543210",
+    "totalAmount": 53499,
+    "items": [
+      {
+        "name": "Meridian Classic Gold",
+        "qty": 1,
+        "price": 24999
+      },
+      {
+        "name": "Titanova Pearl Silver",
+        "qty": 1,
+        "price": 28500
+      }
+    ],
+    "shippingAddress": {
+      "name": "Siddharth Roy",
+      "street": "42 Marine Drive, Highrise Penthouse",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400020",
+      "phone": "9876543210",
+      "country": "India"
+    },
+    "emailStatus": {
+      "sent": true,
+      "messageId": "<76fa90c1-0304-3d70-d7d2-429909419bfc@gmail.com>",
+      "recipient": "kasanimanikanta2005@gmail.com"
+    },
+    "createdAt": "2026-10-02T10:58:00.788Z"
+  },
+  {
+    "id": "notif_1790938630410",
+    "orderId": "TIT-626237-828",
+    "customerName": "Siddharth Roy",
+    "customerEmail": "patron_1790938596090@titanova-test.com",
+    "phone": "9876543210",
+    "totalAmount": 53499,
+    "items": [
+      {
+        "name": "Meridian Classic Gold",
+        "qty": 1,
+        "price": 24999
+      },
+      {
+        "name": "Titanova Pearl Silver",
+        "qty": 1,
+        "price": 28500
+      }
+    ],
+    "shippingAddress": {
+      "name": "Siddharth Roy",
+      "street": "42 Marine Drive, Highrise Penthouse",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400020",
+      "phone": "9876543210",
+      "country": "India"
+    },
+    "emailStatus": {
+      "sent": true,
+      "messageId": "<98c3bc68-64ae-a798-9a85-5a9b3e2b92fb@gmail.com>",
+      "recipient": "kasanimanikanta2005@gmail.com"
+    },
+    "createdAt": "2026-10-02T10:57:10.410Z"
+  }
+]
