@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Sparkles,
   X,
@@ -8,7 +8,10 @@ import {
   User,
   AlertCircle,
   Mic,
+  Volume2,
+  Loader2,
 } from 'lucide-react';
+import { ConversationProvider, useConversation } from '@elevenlabs/react';
 import { useAuth } from '../../context/AuthContext';
 import ChatProductCard from './ChatProductCard';
 import Toast from '../common/Toast';
@@ -45,7 +48,7 @@ const SUGGESTED_QUESTIONS = [
   'What is your warranty policy?',
 ];
 
-export default function ChatWidget() {
+function UnifiedChatAssistant() {
   const { isAuthenticated, user, token } = useAuth();
   const [isOpen, setIsOpen] = useState(() => {
     try {
@@ -146,6 +149,97 @@ export default function ChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // ElevenLabs Voice Integration via official @elevenlabs/react hook
+  const conversation = useConversation({
+    onConnect: () => {
+      setErrorBanner(null);
+    },
+    onDisconnect: () => {
+      // voice session disconnected
+    },
+    onMessage: (payload) => {
+      if (!payload?.message) return;
+      const isUser = payload.role === 'user' || payload.source === 'user';
+      const sender: 'user' | 'ai' = isUser ? 'user' : 'ai';
+      const text = payload.message.trim();
+      if (!text) return;
+
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last && last.sender === sender && last.text === text) {
+          return prev;
+        }
+        return [
+          ...prev,
+          {
+            id: 'voice_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            sender,
+            text,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ];
+      });
+    },
+    onError: (err) => {
+      console.error('[ElevenLabs Voice Error]:', err);
+      const msg = typeof err === 'string' ? err : (err as any)?.message || 'Voice connection issue';
+      if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('notallowed')) {
+        setErrorBanner('Microphone permission required. Please allow microphone access in your browser to speak.');
+      } else {
+        setErrorBanner(msg);
+      }
+    },
+  });
+
+  const isVoiceConnected = conversation.status === 'connected';
+  const isVoiceConnecting = conversation.status === 'connecting';
+  const isVoiceActive = isVoiceConnected || isVoiceConnecting;
+
+  const getVoiceStateLabel = () => {
+    if (isVoiceConnecting) return 'Connecting voice...';
+    if (conversation.isSpeaking) return 'Speaking...';
+    if (conversation.isListening) return 'Listening...';
+    return 'Thinking...';
+  };
+
+  const handleToggleVoice = useCallback(async () => {
+    if (isVoiceConnecting) return;
+
+    if (isVoiceConnected) {
+      try {
+        conversation.endSession();
+      } catch (err) {
+        console.error('Failed to end voice session:', err);
+      }
+      return;
+    }
+
+    setErrorBanner(null);
+
+    // Request microphone permission beforehand
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(t => t.stop());
+      }
+    } catch (err: any) {
+      console.warn('Microphone permission check failed:', err);
+      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+        setErrorBanner('Microphone permission was denied. Please allow microphone access in your browser settings.');
+        return;
+      }
+    }
+
+    try {
+      await conversation.startSession({
+        agentId: 'agent_9701m43chk31fhk8wzh9xd018jnw',
+      });
+    } catch (err: any) {
+      console.error('Failed to start ElevenLabs session:', err);
+      setErrorBanner(err?.message || 'Failed to start voice assistant.');
+    }
+  }, [conversation, isVoiceConnecting, isVoiceConnected]);
+
   // Sync greeting when auth state changes on fresh session
   useEffect(() => {
     setMessages(prev => {
@@ -177,7 +271,7 @@ export default function ChatWidget() {
     if (isOpen && !isMinimized) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isOpen, isMinimized, isLoading]);
+  }, [messages, isOpen, isMinimized, isLoading, isVoiceActive]);
 
   // Listen for open-chat event from Header
   useEffect(() => {
@@ -296,6 +390,13 @@ export default function ChatWidget() {
   };
 
   const handleClearConversation = () => {
+    if (isVoiceConnected) {
+      try {
+        conversation.endSession();
+      } catch {
+        /* ignore */
+      }
+    }
     const freshWelcome: ChatMessage = {
       id: 'msg_welcome_' + Date.now(),
       sender: 'ai',
@@ -360,11 +461,16 @@ export default function ChatWidget() {
                 <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-gold-600 via-gold-500 to-gold-400 flex items-center justify-center text-charcoal-950 font-serif font-bold text-xs shadow-md">
                   T
                 </div>
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-charcoal-950" />
+                <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-charcoal-950 ${isVoiceConnected ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
               </div>
               <div>
                 <h3 className="font-serif text-sm tracking-[0.15em] font-medium text-white flex items-center gap-1.5">
                   <span>TITANOVA AI</span>
+                  {isVoiceConnected && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-gold-500/20 text-gold-400 border border-gold-500/30 uppercase tracking-widest font-sans font-semibold">
+                      Voice
+                    </span>
+                  )}
                 </h3>
                 <p className="text-[10px] text-charcoal-400 tracking-wider">Your personal watch assistant</p>
               </div>
@@ -393,60 +499,71 @@ export default function ChatWidget() {
               </button>
 
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  if (isVoiceConnected) {
+                    try {
+                      conversation.endSession();
+                    } catch {
+                      /* ignore */
+                    }
+                  }
+                  setIsOpen(false);
+                }}
                 className="p-1.5 text-charcoal-400 hover:text-white hover:bg-charcoal-900 rounded transition-colors cursor-pointer"
-                title="Close chat"
+                title="Close"
                 aria-label="Close chat"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Body when not minimized */}
+          {/* Body */}
           {!isMinimized && (
             <>
-              {/* Message List */}
+              {/* Message History */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-charcoal-800">
                 {messages.map(msg => (
                   <div
                     key={msg.id}
-                    className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                    className={`flex flex-col ${
+                      msg.sender === 'user' ? 'items-end' : 'items-start'
+                    }`}
                   >
-                    <div className="flex items-end gap-2 max-w-[88%]">
+                    <div
+                      className={`flex gap-2 max-w-[85%] ${
+                        msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'
+                      }`}
+                    >
                       {msg.sender === 'ai' && (
-                        <div className="w-6 h-6 rounded-full bg-charcoal-900 border border-gold-500/30 flex items-center justify-center shrink-0 mb-1 text-[10px] text-gold-400 font-serif">
+                        <div className="w-6 h-6 rounded-full bg-charcoal-900 border border-gold-500/30 flex items-center justify-center shrink-0 mt-1 text-[10px] text-gold-400 font-serif">
                           T
                         </div>
                       )}
 
-                      <div
-                        className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
-                          msg.sender === 'user'
-                            ? 'bg-gradient-to-br from-gold-600 to-gold-700 text-charcoal-950 font-medium rounded-br-sm shadow-md'
-                            : 'bg-[#15161b] text-charcoal-200 border border-charcoal-800/80 rounded-bl-sm shadow-sm'
-                        }`}
-                      >
-                        {/* Text Content */}
-                        <div className="whitespace-pre-line">{msg.text}</div>
+                      <div className="space-y-2">
+                        <div
+                          className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                            msg.sender === 'user'
+                              ? 'bg-gold-500 text-charcoal-950 font-medium rounded-br-sm shadow-sm'
+                              : 'bg-[#15161b] text-charcoal-200 border border-charcoal-800/80 rounded-bl-sm'
+                          }`}
+                        >
+                          <p className="whitespace-pre-line">{msg.text}</p>
+                        </div>
 
-                        {/* Product Recommendation Cards (if any) */}
+                        {/* Product Cards Grid if returned */}
                         {msg.products && msg.products.length > 0 && (
-                          <div className="mt-2.5 pt-2 border-t border-charcoal-800/80 space-y-2">
-                            <span className="text-[10px] uppercase tracking-wider text-gold-400 font-semibold block">
-                              Recommended Timepieces:
-                            </span>
-                            <div className="space-y-2">
+                          <div className="pt-2">
+                            <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none snap-x">
                               {msg.products.map(prod => (
-                                <ChatProductCard
-                                  key={prod.id}
-                                  product={prod}
-                                  onToast={msg => setToastMessage(msg)}
-                                  onNavigate={() => {
-                                    // Keep chat active or minimize smoothly
-                                    setIsMinimized(true);
-                                  }}
-                                />
+                                <div key={prod.id} className="snap-start shrink-0">
+                                  <ChatProductCard
+                                    product={prod}
+                                    onToast={(msg) => setToastMessage(msg)}
+                                    onNavigate={() => setIsOpen(false)}
+                                  />
+                                </div>
                               ))}
                             </div>
                           </div>
@@ -480,8 +597,8 @@ export default function ChatWidget() {
                   </div>
                 )}
 
-                {/* Suggested Questions (shown if conversation has only welcome message) */}
-                {messages.length === 1 && !isLoading && (
+                {/* Suggested Questions */}
+                {messages.length === 1 && !isLoading && !isVoiceActive && (
                   <div className="pt-2 space-y-2">
                     <span className="text-[10px] uppercase tracking-[0.2em] text-gold-400/90 font-bold block">
                       Suggested Inquiries:
@@ -511,6 +628,37 @@ export default function ChatWidget() {
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* Voice Status Strip */}
+              {isVoiceActive && (
+                <div className="flex items-center justify-between px-3.5 py-2 bg-charcoal-900 border-t border-charcoal-800 text-xs shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-gold-500" />
+                    </span>
+                    <span className="text-gold-300 font-medium text-[11px] tracking-wider uppercase">
+                      {getVoiceStateLabel()}
+                    </span>
+                    {conversation.isSpeaking && (
+                      <Volume2 className="w-3.5 h-3.5 text-gold-400 animate-pulse ml-1" />
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        conversation.endSession();
+                      } catch {
+                        /* ignore */
+                      }
+                    }}
+                    className="text-[10px] text-charcoal-400 hover:text-red-400 uppercase tracking-wider font-semibold transition-colors cursor-pointer"
+                  >
+                    Stop Voice
+                  </button>
+                </div>
+              )}
+
               {/* Input Footer */}
               <div className="p-3 bg-charcoal-950 border-t border-charcoal-800 shrink-0">
                 <form
@@ -530,24 +678,35 @@ export default function ChatWidget() {
                     disabled={isLoading}
                   />
 
+                  {/* Microphone Voice Button */}
                   <button
                     type="button"
-                    onClick={() => {
-                      const el = document.querySelector('elevenlabs-convai') as any;
-                      if (el && typeof el.startConversation === 'function') {
-                        el.startConversation();
-                      } else {
-                        const btn = el?.shadowRoot?.querySelector('button') || el;
-                        btn?.click?.();
-                      }
-                    }}
-                    title="Speak with Titan Nova Voice Concierge"
-                    className="w-8 h-8 rounded-lg bg-[#1a1b22] hover:bg-gold-500 text-gold-400 hover:text-charcoal-950 border border-gold-500/30 transition-all flex items-center justify-center shrink-0 cursor-pointer shadow-sm"
-                    aria-label="Speak with Voice Concierge"
+                    onClick={handleToggleVoice}
+                    disabled={isVoiceConnecting}
+                    title={
+                      isVoiceConnected
+                        ? 'Stop voice conversation'
+                        : isVoiceConnecting
+                        ? 'Connecting voice...'
+                        : 'Start ElevenLabs voice assistant'
+                    }
+                    className={`w-8 h-8 rounded-lg transition-all flex items-center justify-center shrink-0 cursor-pointer shadow-sm ${
+                      isVoiceConnected
+                        ? 'bg-gold-500 text-charcoal-950 ring-2 ring-gold-400/60 shadow-gold-500/30'
+                        : isVoiceConnecting
+                        ? 'bg-charcoal-800 text-gold-400 animate-pulse'
+                        : 'bg-[#1a1b22] hover:bg-gold-500 text-gold-400 hover:text-charcoal-950 border border-gold-500/30'
+                    }`}
+                    aria-label={isVoiceConnected ? 'Stop voice conversation' : 'Start ElevenLabs voice assistant'}
                   >
-                    <Mic className="w-3.5 h-3.5" />
+                    {isVoiceConnecting ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Mic className={`w-3.5 h-3.5 ${isVoiceConnected ? 'animate-pulse' : ''}`} />
+                    )}
                   </button>
 
+                  {/* Send Button */}
                   <button
                     type="submit"
                     disabled={!inputValue.trim() || isLoading}
@@ -572,5 +731,13 @@ export default function ChatWidget() {
         <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
       )}
     </>
+  );
+}
+
+export default function ChatWidget() {
+  return (
+    <ConversationProvider>
+      <UnifiedChatAssistant />
+    </ConversationProvider>
   );
 }
