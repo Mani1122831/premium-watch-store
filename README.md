@@ -555,3 +555,57 @@ ai-assistant
 Use this as the GitHub repository description:
 
 > Premium AI-powered luxury watch e-commerce platform built with React, TypeScript, Express, MongoDB, and Gemini AI.
+
+# ⌚ Premium Watch Store
+
+A premium e-commerce website designed to deliver a modern luxury watch shopping experience.
+
+## 🌐 Live Demo
+
+**Website:** https://premium-watch-store-phi.vercel.app/login
+
+## ✨ Features
+
+- User registration and login
+- Premium watch product catalog
+- Product search and filtering
+- Watch product details and images
+- Responsive user interface
+- AI-powered chatbot (if enabled in the deployed version)
+- Secure authentication and shopping experience
+
+## 🛠️ Technologies Used
+
+- Frontend: React.js, HTML, CSS, JavaScript
+- Backend: Node.js and Express.js (if configured)
+- Database: MongoDB (if configured)
+- Deployment: Vercel
+
+## 🚀 Run Locally
+
+1. Clone the repository:
+
+   ```bash
+   git clone YOUR_GITHUB_REPOSITORY_URL
+   ```
+
+2. Open the project folder in VS Code.
+
+3. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+4. Start the frontend and backend using the commands configured in your project.
+
+## 👨‍💻 Developer
+
+**Manikanta**  
+B.Tech — Computer Science and Engineering  
+Kallam Haranadha Reddy Institute of Technology
+
+---
+
+*Experience premium watch shopping through a modern digital storefront.*
+
