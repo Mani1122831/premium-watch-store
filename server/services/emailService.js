@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
@@ -5,7 +8,9 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const NOTIFICATIONS_FILE = path.join(__dirname, '../data/admin_notifications.json');
+const NOTIFICATIONS_FILE = process.env.VERCEL
+  ? path.join('/tmp', 'admin_notifications.json')
+  : path.join(__dirname, '../data/admin_notifications.json');
 
 /**
  * Format currency in Indian Rupees
@@ -229,14 +234,154 @@ function persistAdminNotification(order, emailResult) {
 }
 
 /**
+ * Retrieve and normalize mail credentials with multi-alias fallback
+ */
+export function getMailConfig() {
+  const mailUser = (
+    process.env.MAIL_USER ||
+    process.env.EMAIL_USER ||
+    process.env.GMAIL_USER ||
+    ''
+  ).trim();
+
+  const rawPass = (
+    process.env.MAIL_PASSWORD ||
+    process.env.MAIL_PASS ||
+    process.env.EMAIL_PASS ||
+    process.env.EMAIL_PASSWORD ||
+    ''
+  ).trim();
+
+  // Strip all internal whitespace commonly included when copying Google App Passwords
+  const mailPass = rawPass.replace(/\s+/g, '');
+
+  const adminEmail = (
+    process.env.ADMIN_EMAIL ||
+    process.env.MAIL_USER ||
+    process.env.EMAIL_USER ||
+    mailUser
+  ).trim();
+
+  const isConfigured = Boolean(mailUser && mailPass);
+
+  return {
+    mailUser,
+    mailPass,
+    adminEmail,
+    isConfigured,
+    mailHost: process.env.MAIL_HOST || 'smtp.gmail.com',
+    mailPort: process.env.MAIL_PORT || '587',
+    mailSecure: process.env.MAIL_SECURE === 'true',
+  };
+}
+
+/**
+ * Build prioritized transport array for cloud/serverless resiliency
+ */
+function createTransporters(mailUser, mailPass) {
+  const isGmail = mailUser.toLowerCase().includes('gmail') || (process.env.MAIL_HOST || '').includes('gmail');
+  const transporters = [];
+
+  // Strategy 1: Nodemailer 'service: gmail' (Official preset, auto-selects ideal connection on serverless)
+  if (isGmail) {
+    transporters.push({
+      name: 'Gmail Service Preset',
+      transporter: nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: mailUser, pass: mailPass },
+        connectionTimeout: 6000,
+        greetingTimeout: 6000,
+        socketTimeout: 8000,
+      }),
+    });
+  }
+
+  // Strategy 2: Port 587 STARTTLS (Standard cloud outbound SMTP port, rarely blocked on AWS Lambda)
+  transporters.push({
+    name: 'SMTP Port 587 (STARTTLS)',
+    transporter: nodemailer.createTransport({
+      host: process.env.MAIL_HOST || 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      auth: { user: mailUser, pass: mailPass },
+      connectionTimeout: 6000,
+      greetingTimeout: 6000,
+      socketTimeout: 8000,
+      tls: {
+        rejectUnauthorized: false,
+      },
+    }),
+  });
+
+  // Strategy 3: Port 465 SSL Direct
+  transporters.push({
+    name: 'SMTP Port 465 (SSL Direct)',
+    transporter: nodemailer.createTransport({
+      host: process.env.MAIL_HOST || 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: { user: mailUser, pass: mailPass },
+      connectionTimeout: 6000,
+      greetingTimeout: 6000,
+      socketTimeout: 8000,
+      tls: {
+        rejectUnauthorized: false,
+      },
+    }),
+  });
+
+  return transporters;
+}
+
+/**
+ * Execute email dispatch with automated cascading fallback
+ */
+async function sendEmailWithFallbacks(mailOptions, contextDescription) {
+  const { mailUser, mailPass, isConfigured } = getMailConfig();
+
+  if (!isConfigured) {
+    console.warn(`[Email Service] ${contextDescription}: Skipped - Credentials not configured (MAIL_USER / MAIL_PASSWORD missing in environment).`);
+    return {
+      sent: false,
+      reason: 'credentials_not_configured',
+      details: 'Please configure MAIL_USER and MAIL_PASSWORD in Vercel Environment Variables.',
+    };
+  }
+
+  const transporters = createTransporters(mailUser, mailPass);
+  let lastError = null;
+
+  for (const { name, transporter } of transporters) {
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`[Email Service] ${contextDescription} successfully sent via ${name}. MessageId: ${info.messageId}`);
+      return {
+        sent: true,
+        transport: name,
+        messageId: info.messageId,
+      };
+    } catch (err) {
+      lastError = err;
+      console.warn(`[Email Service Notice] ${contextDescription} attempt via ${name} failed (${err.message}). Trying next transport...`);
+    }
+  }
+
+  console.error(`[Email Service Error] All email transport strategies failed for ${contextDescription}: ${lastError?.message}`);
+  return {
+    sent: false,
+    reason: 'transport_error',
+    error: lastError?.message || 'Unknown SMTP error',
+  };
+}
+
+/**
  * Send Order Notification Email to ADMIN_EMAIL via Gmail SMTP (nodemailer)
  */
 export async function sendOrderNotificationEmail(order) {
-  const mailUser = process.env.MAIL_USER;
-  const mailPass = process.env.MAIL_PASSWORD;
-  const adminEmail = process.env.ADMIN_EMAIL || mailUser;
+  const { mailUser, adminEmail, isConfigured } = getMailConfig();
 
-  if (!mailUser || !mailPass || !adminEmail) {
+  if (!isConfigured) {
     console.log(
       `[Email Service] Order #${order.orderId} recorded in MongoDB. Configure MAIL_USER and MAIL_PASSWORD to activate instant Gmail dispatches.`
     );
@@ -249,11 +394,6 @@ export async function sendOrderNotificationEmail(order) {
     return result;
   }
 
-  // Attempt 1: Configured settings (Default: port 465 SSL)
-  const isSecure = process.env.MAIL_SECURE === 'true' || (process.env.MAIL_PORT || '465') === '465';
-  const mailHost = process.env.MAIL_HOST || 'smtp.gmail.com';
-  const mailPort = parseInt(process.env.MAIL_PORT || (isSecure ? '465' : '587'), 10);
-
   const mailOptions = {
     from: `"TITANOVA Horology Atelier" <${mailUser}>`,
     to: adminEmail,
@@ -262,67 +402,10 @@ export async function sendOrderNotificationEmail(order) {
     text: `TITANOVA - New Order #${order.orderId}\n\nCustomer: ${order.customerName} (${order.customerEmail})\nTotal: ${formatCurrency(order.totalAmount)}\nDate: ${new Date(order.createdAt).toISOString()}`,
   };
 
-  try {
-    const transporter = nodemailer.createTransport({
-      host: mailHost,
-      port: mailPort,
-      secure: isSecure,
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 10000,
-      auth: {
-        user: mailUser,
-        pass: mailPass,
-      },
-    });
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[Email Service] Order notification email successfully dispatched for #${order.orderId}. MessageId: ${info.messageId}`);
-    const result = {
-      sent: true,
-      messageId: info.messageId,
-      recipient: adminEmail,
-    };
-    persistAdminNotification(order, result);
-    return result;
-  } catch (err) {
-    console.warn(`[Email Service Notice] Port ${mailPort} failed (${err.message}). Trying fallback port 587 (TLS)...`);
-
-    // Attempt 2: Fallback to Port 587 (STARTTLS)
-    try {
-      const fallbackTransporter = nodemailer.createTransport({
-        host: mailHost,
-        port: 587,
-        secure: false,
-        connectionTimeout: 8000,
-        greetingTimeout: 8000,
-        socketTimeout: 10000,
-        auth: {
-          user: mailUser,
-          pass: mailPass,
-        },
-      });
-
-      const fallbackInfo = await fallbackTransporter.sendMail(mailOptions);
-      console.log(`[Email Service] Order email dispatched via fallback port 587 for #${order.orderId}. MessageId: ${fallbackInfo.messageId}`);
-      const result = {
-        sent: true,
-        messageId: fallbackInfo.messageId,
-        recipient: adminEmail,
-      };
-      persistAdminNotification(order, result);
-      return result;
-    } catch (fallbackErr) {
-      console.warn(`[Email Service Notice] Gmail SMTP notification could not be delivered: ${fallbackErr.message}`);
-      const result = {
-        sent: false,
-        error: fallbackErr.message,
-        recipient: adminEmail,
-      };
-      persistAdminNotification(order, result);
-      return result;
-    }
-  }
+  const result = await sendEmailWithFallbacks(mailOptions, `Order #${order.orderId}`);
+  result.recipient = adminEmail;
+  persistAdminNotification(order, result);
+  return result;
 }
 
 /**
@@ -427,18 +510,9 @@ function buildPasswordResetHtml(patronName, resetUrl) {
  * Send Password Reset Email via Gmail SMTP (nodemailer)
  */
 export async function sendPasswordResetEmail(toEmail, resetUrl, patronName) {
-  const mailUser = process.env.MAIL_USER;
-  const mailPass = process.env.MAIL_PASSWORD;
+  const { mailUser, isConfigured } = getMailConfig();
 
-  const mailOptions = {
-    from: `"TITANOVA Security Concierge" <${mailUser || 'concierge@titanova.com'}>`,
-    to: toEmail,
-    subject: `TITANOVA – Password Recovery Request`,
-    html: buildPasswordResetHtml(patronName, resetUrl),
-    text: `Dear ${patronName || 'Valued Patron'},\n\nA password reset request was received for your TITANOVA account.\n\nPlease reset your password using the following link:\n${resetUrl}\n\nThis link expires in 60 minutes.\n\nTITANOVA Haute Horlogerie`,
-  };
-
-  if (!mailUser || !mailPass) {
+  if (!isConfigured) {
     console.log(
       `[Email Service] Password reset requested for ${toEmail}. Link: ${resetUrl}`
     );
@@ -450,44 +524,18 @@ export async function sendPasswordResetEmail(toEmail, resetUrl, patronName) {
     };
   }
 
-  const isSecure = process.env.MAIL_SECURE === 'true' || (process.env.MAIL_PORT || '465') === '465';
-  const mailHost = process.env.MAIL_HOST || 'smtp.gmail.com';
-  const mailPort = parseInt(process.env.MAIL_PORT || (isSecure ? '465' : '587'), 10);
+  const mailOptions = {
+    from: `"TITANOVA Security Concierge" <${mailUser || 'concierge@titanova.com'}>`,
+    to: toEmail,
+    subject: `TITANOVA – Password Recovery Request`,
+    html: buildPasswordResetHtml(patronName, resetUrl),
+    text: `Dear ${patronName || 'Valued Patron'},\n\nA password reset request was received for your TITANOVA account.\n\nPlease reset your password using the following link:\n${resetUrl}\n\nThis link expires in 60 minutes.\n\nTITANOVA Haute Horlogerie`,
+  };
 
-  try {
-    const transporter = nodemailer.createTransport({
-      host: mailHost,
-      port: mailPort,
-      secure: isSecure,
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 10000,
-      auth: { user: mailUser, pass: mailPass },
-    });
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[Email Service] Password reset email dispatched to ${toEmail}. MessageId: ${info.messageId}`);
-    return { sent: true, messageId: info.messageId, recipient: toEmail };
-  } catch (err) {
-    console.warn(`[Email Service Notice] Port ${mailPort} failed for reset email. Trying port 587...`);
-    try {
-      const fallbackTransporter = nodemailer.createTransport({
-        host: mailHost,
-        port: 587,
-        secure: false,
-        connectionTimeout: 8000,
-        greetingTimeout: 8000,
-        socketTimeout: 10000,
-        auth: { user: mailUser, pass: mailPass },
-      });
-      const fallbackInfo = await fallbackTransporter.sendMail(mailOptions);
-      console.log(`[Email Service] Password reset email dispatched via fallback port 587 to ${toEmail}. MessageId: ${fallbackInfo.messageId}`);
-      return { sent: true, messageId: fallbackInfo.messageId, recipient: toEmail };
-    } catch (fallbackErr) {
-      console.warn(`[Email Service Notice] Gmail reset email could not be delivered: ${fallbackErr.message}`);
-      return { sent: false, error: fallbackErr.message, resetUrl, recipient: toEmail };
-    }
-  }
+  const result = await sendEmailWithFallbacks(mailOptions, `Password reset link to ${toEmail}`);
+  result.recipient = toEmail;
+  result.resetUrl = resetUrl;
+  return result;
 }
 
 /**
@@ -583,8 +631,18 @@ function buildPasswordResetOtpHtml(patronName, otpCode) {
  * Sends strictly to the patron's email address
  */
 export async function sendPasswordResetOtpEmail(toEmail, otpCode, patronName) {
-  const mailUser = process.env.MAIL_USER;
-  const mailPass = process.env.MAIL_PASSWORD;
+  const { mailUser, isConfigured } = getMailConfig();
+
+  if (!isConfigured) {
+    console.log(
+      `[Email Service] Password reset OTP generated for ${toEmail}: ${otpCode}`
+    );
+    return {
+      sent: false,
+      reason: 'credentials_not_configured',
+      recipient: toEmail,
+    };
+  }
 
   const mailOptions = {
     from: `"TITANOVA Security Concierge" <${mailUser || 'concierge@titanova.com'}>`,
@@ -594,55 +652,59 @@ export async function sendPasswordResetOtpEmail(toEmail, otpCode, patronName) {
     text: `Dear ${patronName || 'Valued Patron'},\n\nYour TITANOVA password reset verification code is:\n\n${otpCode}\n\nThis code expires in 10 minutes.\n\nTITANOVA Haute Horlogerie`,
   };
 
-  if (!mailUser || !mailPass) {
-    console.log(
-      `[Email Service] Password reset OTP generated for ${toEmail}.`
-    );
+  const result = await sendEmailWithFallbacks(mailOptions, `Verification OTP to ${toEmail}`);
+  result.recipient = toEmail;
+  return result;
+}
+
+/**
+ * Operational diagnostic function to test live email delivery
+ */
+export async function testEmailDelivery(targetEmail) {
+  const { mailUser, adminEmail, isConfigured } = getMailConfig();
+  const recipient = targetEmail || adminEmail || mailUser;
+
+  if (!isConfigured) {
     return {
-      sent: false,
-      reason: 'credentials_not_configured',
-      recipient: toEmail,
+      success: false,
+      error: 'MAIL_USER and MAIL_PASSWORD are not configured in environment variables.',
+      config: {
+        mailUserSet: Boolean(mailUser),
+        mailPassSet: false,
+        adminEmailSet: Boolean(adminEmail),
+      },
     };
   }
 
-  const isSecure = process.env.MAIL_SECURE === 'true' || (process.env.MAIL_PORT || '465') === '465';
-  const mailHost = process.env.MAIL_HOST || 'smtp.gmail.com';
-  const mailPort = parseInt(process.env.MAIL_PORT || (isSecure ? '465' : '587'), 10);
+  const mailOptions = {
+    from: `"TITANOVA Horology Atelier" <${mailUser}>`,
+    to: recipient,
+    subject: `TITANOVA – Operational Dispatch Test`,
+    html: `
+      <div style="background-color: #0c0d10; color: #ffffff; padding: 32px; font-family: sans-serif; border-radius: 8px; border: 1px solid #d4a017;">
+        <h2 style="color: #d4a017; margin-top: 0; font-family: Georgia, serif; letter-spacing: 0.2em;">TITANOVA HAUTE HORLOGERIE</h2>
+        <p style="color: #4ade80; font-weight: bold; font-size: 15px;">✔ Live Email Dispatch Operational</p>
+        <p style="color: #bbbbbb; font-size: 13px; line-height: 1.6;">
+          This verification message confirms that your TITANOVA email service is connected to Gmail SMTP and operating properly on Vercel Serverless.
+        </p>
+        <div style="background-color: #1a1c22; padding: 12px 16px; border-radius: 4px; font-size: 12px; color: #aaaaaa; margin-top: 16px;">
+          Sender: ${mailUser}<br>
+          Recipient: ${recipient}<br>
+          Timestamp: ${new Date().toISOString()}
+        </div>
+      </div>
+    `,
+    text: `TITANOVA Haute Horlogerie - Live Email Dispatch Operational.\nSender: ${mailUser}\nRecipient: ${recipient}\nTimestamp: ${new Date().toISOString()}`,
+  };
 
-  try {
-    const transporter = nodemailer.createTransport({
-      host: mailHost,
-      port: mailPort,
-      secure: isSecure,
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 10000,
-      auth: { user: mailUser, pass: mailPass },
-    });
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[Email Service] Verification OTP email dispatched to ${toEmail}. MessageId: ${info.messageId}`);
-    return { sent: true, messageId: info.messageId, recipient: toEmail };
-  } catch (err) {
-    console.warn(`[Email Service Notice] Port ${mailPort} failed for OTP email. Trying fallback port 587...`);
-    try {
-      const fallbackTransporter = nodemailer.createTransport({
-        host: mailHost,
-        port: 587,
-        secure: false,
-        connectionTimeout: 8000,
-        greetingTimeout: 8000,
-        socketTimeout: 10000,
-        auth: { user: mailUser, pass: mailPass },
-      });
-      const fallbackInfo = await fallbackTransporter.sendMail(mailOptions);
-      console.log(`[Email Service] Verification OTP email dispatched via fallback port 587 to ${toEmail}. MessageId: ${fallbackInfo.messageId}`);
-      return { sent: true, messageId: fallbackInfo.messageId, recipient: toEmail };
-    } catch (fallbackErr) {
-      console.warn(`[Email Service Notice] Gmail reset OTP email could not be delivered: ${fallbackErr.message}`);
-      return { sent: false, error: fallbackErr.message, recipient: toEmail };
-    }
-  }
+  const result = await sendEmailWithFallbacks(mailOptions, `Diagnostic test email to ${recipient}`);
+  return {
+    success: result.sent,
+    recipient,
+    transport: result.transport,
+    messageId: result.messageId,
+    error: result.error,
+  };
 }
 
 

@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { MongoClient, ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
@@ -12,7 +15,9 @@ let isConnected = false;
 let isMock = false;
 
 // Fallback in-memory storage file for development when MongoDB is unreachable
-const fallbackFilePath = path.join(__dirname, '..', '..', 'scratch', 'dev-mongo-fallback.json');
+const fallbackFilePath = process.env.VERCEL
+  ? path.join('/tmp', 'dev-mongo-fallback.json')
+  : path.join(__dirname, '..', '..', 'scratch', 'dev-mongo-fallback.json');
 
 function loadFallbackData() {
   try {
